@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50 text-slate-900 antialiased transition-colors duration-200" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Imp News App - Live Multi-Category News{% endblock %}</title>
+    
+    <!-- Google Fonts: Inter & Noto Sans Tamil -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Tamil', 'system-ui', 'sans-serif'],
+                        tamil: ['Noto Sans Tamil', 'Inter', 'sans-serif']
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Smooth scrolling and custom scrollbar */
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .dark ::-webkit-scrollbar-track { background: #0f172a; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+
+    <!-- Top Utility Announcement & Status Bar -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md sticky top-0 z-50 transition-colors duration-200">
+        <div class="bg-slate-900 dark:bg-black text-slate-300 text-xs py-1.5 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-600 text-white uppercase tracking-wider">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-white animate-pulse-fast"></span> Live Feed
+                    </span>
+                    <span id="current-timestamp" class="text-slate-400 hidden sm:inline"></span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    {% if has_live_api %}
+                    <span class="inline-flex items-center text-emerald-400 font-medium">
+                        <i class="fa-solid fa-circle-check mr-1 text-[10px]"></i> Live API Active ({{ api_provider|upper }})
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center text-amber-400 font-medium text-[11px]" title="Provide NEWS_API_KEY in .env for external live updates">
+                        <i class="fa-solid fa-triangle-exclamation mr-1 text-[10px]"></i> Demo Mode (Curated Live Preview)
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('category_view', name='breaking') }}" class="hover:text-white transition flex items-center text-red-400 font-medium">
+                        <i class="fa-solid fa-bolt mr-1 text-[11px]"></i> Breaking
+                    </a>
+                    <a href="{{ url_for('category_view', name='flash') }}" class="hover:text-white transition flex items-center text-amber-400 font-medium">
+                        <i class="fa-solid fa-rss mr-1 text-[11px]"></i> Flash
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Navigation Bar -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}" class="flex items-center space-x-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-rose-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                            <i class="fa-solid fa-newspaper text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600 transition">Imp News<span class="text-red-600">.</span></span>
+                            <span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 -mt-1">Real-Time Portal</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Desktop Category Navigation Links -->
+                <div class="hidden lg:flex items-center space-x-1">
+                    <a href="{{ url_for('home') }}" class="px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Home
+                    </a>
+                    {% for slug, cat in categories.items() %}
+                    <a href="{{ url_for('category_view', name=slug) }}" 
+                       class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-1.5">
+                        <i class="fa-solid {{ cat.icon }} text-xs opacity-70"></i>
+                        <span>{{ cat.name }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Controls: Dark Mode, Bookmarks, and Filters -->
+                <div class="hidden sm:flex items-center space-x-2">
+                    <!-- Bookmarks Drawer Button -->
+                    <button type="button" onclick="toggleBookmarksDrawer()" class="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Saved Bookmarks">
+                        <i class="fa-solid fa-bookmark text-sm"></i>
+                        <span id="bookmark-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+                    </button>
+
+                    <!-- Dark Mode Toggle Button -->
+                    <button type="button" id="theme-toggle" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Dark/Light Mode">
+                        <i class="fa-solid fa-moon text-sm dark:hidden"></i>
+                        <i class="fa-solid fa-sun text-sm hidden dark:inline text-amber-400"></i>
+                    </button>
+
+                    <!-- Sub-category quick links -->
+                    <a href="{{ url_for('category_view', name='breaking') }}" 
+                       class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900 border border-red-200 dark:border-red-800 transition">
+                        <span class="w-2 h-2 rounded-full bg-red-600 mr-1.5 animate-pulse-fast"></span> Breaking
+                    </a>
+                    <a href="{{ url_for('category_view', name='flash') }}" 
+                       class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900 border border-amber-200 dark:border-amber-800 transition">
+                        <i class="fa-solid fa-bolt mr-1 text-amber-600 text-[11px]"></i> Flash News
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex items-center space-x-2 lg:hidden">
+                    <button type="button" onclick="toggleBookmarksDrawer()" class="relative p-2 rounded-lg text-slate-600 dark:text-slate-300">
+                        <i class="fa-solid fa-bookmark text-base"></i>
+                        <span id="mobile-bookmark-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+                    </button>
+                    <button type="button" id="mobile-menu-btn" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none" aria-label="Toggle Navigation">
+                        <i class="fa-solid fa-bars text-xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Drawer -->
+            <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-200 dark:border-slate-800 py-3 space-y-1">
+                <a href="{{ url_for('home') }}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-house mr-2 text-slate-400"></i> Home
+                </a>
+                {% for slug, cat in categories.items() %}
+                <a href="{{ url_for('category_view', name=slug) }}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i class="fa-solid {{ cat.icon }} mr-2 text-slate-400"></i> {{ cat.name }}
+                    <span class="text-xs text-slate-400 font-normal">({{ cat.native_name }})</span>
+                </a>
+                {% endfor %}
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between px-3">
+                    <span class="text-xs text-slate-500">Theme</span>
+                    <button type="button" onclick="toggleDarkMode()" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        Toggle Light / Dark
+                    </button>
+                </div>
+                <div class="pt-2 flex space-x-2 px-3">
+                    <a href="{{ url_for('category_view', name='breaking') }}" class="flex-1 text-center py-2 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                        Breaking News
+                    </a>
+                    <a href="{{ url_for('category_view', name='flash') }}" class="flex-1 text-center py-2 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        Flash News
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Dynamic Content Block -->
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bookmarks Side Drawer -->
+    <div id="bookmarks-drawer" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="toggleBookmarksDrawer()"></div>
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800">
+                <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-bookmark text-blue-600 text-lg"></i>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Reading List</h2>
+                    </div>
+                    <button type="button" onclick="toggleBookmarksDrawer()" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                
+                <div id="bookmarks-list" class="flex-1 p-6 overflow-y-auto space-y-4">
+                    <!-- Populated dynamically via JavaScript -->
+                </div>
+
+                <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center text-xs text-slate-500">
+                    <span id="bookmarks-count-text">0 saved items</span>
+                    <button onclick="clearAllBookmarks()" class="text-red-500 hover:text-red-700 font-semibold transition">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-semibold">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+            <span id="toast-message">Notification</span>
+        </div>
+    </div>
+
+    <!-- Modern Clean Footer -->
+    <footer class="bg-slate-900 text-slate-400 mt-16 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- Column 1: Brand & Bio -->
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-newspaper text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-white tracking-tight">Imp News App</span>
+                    </div>
+                    <p class="text-sm text-slate-400 max-w-md leading-relaxed mb-4">
+                        A modern, responsive Flask-powered news application bringing you verified Tamil news, global English reporting, cutting-edge technology trends, and enigmatic scientific frontiers.
+                    </p>
+                    <div class="flex items-center space-x-3 text-xs text-slate-500">
+                        <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Secure API Proxy</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Zero SQL Storage</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-microchip text-blue-400 mr-1"></i> Python Flask</span>
+                    </div>
+                </div>
+
+                <!-- Column 2: Core News Feeds -->
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-200 mb-4">News Feeds</h3>
+                    <ul class="space-y-2.5 text-sm">
+                        {% for slug, cat in categories.items() %}
+                        <li>
+                            <a href="{{ url_for('category_view', name=slug) }}" class="hover:text-white transition flex items-center justify-between">
+                                <span>{{ cat.name }}</span>
+                                <span class="text-xs text-slate-500 font-mono">{{ cat.quota }} cap</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Column 3: Fast Channels -->
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-200 mb-4">Fast Channels</h3>
+                    <ul class="space-y-2.5 text-sm">
+                        <li>
+                            <a href="{{ url_for('category_view', name='breaking') }}" class="hover:text-red-400 transition flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                <span>Breaking News Dispatch</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('category_view', name='flash') }}" class="hover:text-amber-400 transition flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Flash News Ticker</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('health_check') }}" target="_blank" class="hover:text-emerald-400 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-heart-pulse text-xs text-emerald-400"></i>
+                                <span>API Status JSON</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+                <p>© {{ current_year }} Imp News App. Built with Python Flask & Tailwind CSS.</p>
+                <p>Data securely delivered via News API integration.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Client-Side Scripts -->
+    <script>
+        // Dark Mode Initialization & Handler
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        initTheme();
+
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                showToast("Switched to Light Mode");
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                showToast("Switched to Dark Mode");
+            }
+        }
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) themeBtn.addEventListener('click', toggleDarkMode);
+
+        // Toast Notification Trigger
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            if (toast && toastMsg) {
+                toastMsg.textContent = message;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2500);
+            }
+        }
+
+        // Bookmark Manager (localStorage based - Zero Database Required)
+        function getBookmarks() {
+            try {
+                return JSON.parse(localStorage.getItem('imp_news_bookmarks')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveBookmarks(bookmarks) {
+            localStorage.setItem('imp_news_bookmarks', JSON.stringify(bookmarks));
+            updateBookmarkBadges();
+        }
+
+        function toggleBookmark(articleId, title, url, source, image) {
+            let bookmarks = getBookmarks();
+            const exists = bookmarks.find(b => b.id === articleId);
+            if (exists) {
+                bookmarks = bookmarks.filter(b => b.id !== articleId);
+                showToast("Removed from reading list");
+            } else {
+                bookmarks.push({ id: articleId, title, url, source, image, savedAt: new Date().toLocaleDateString() });
+                showToast("Saved to reading list");
+            }
+            saveBookmarks(bookmarks);
+            renderBookmarksList();
+            updateBookmarkButtons();
+        }
+
+        function updateBookmarkBadges() {
+            const count = getBookmarks().length;
+            const b1 = document.getElementById('bookmark-badge');
+            const b2 = document.getElementById('mobile-bookmark-badge');
+            [b1, b2].forEach(b => {
+                if (b) {
+                    if (count > 0) {
+                        b.textContent = count;
+                        b.classList.remove('hidden');
+                    } else {
+                        b.classList.add('hidden');
+                    }
+                }
+            });
+            const countText = document.getElementById('bookmarks-count-text');
+            if (countText) countText.textContent = `${count} saved items`;
+        }
+
+        function updateBookmarkButtons() {
+            const bookmarks = getBookmarks();
+            const btns = document.querySelectorAll('.bookmark-btn');
+            btns.forEach(btn => {
+                const id = btn.getAttribute('data-id');
+                const isSaved = bookmarks.some(b => b.id === id);
+                if (isSaved) {
+                    btn.classList.add('text-blue-600', 'fill-current');
+                    btn.querySelector('i').classList.replace('fa-regular', 'fa-solid');
+                } else {
+                    btn.classList.remove('text-blue-600', 'fill-current');
+                    btn.querySelector('i').classList.replace('fa-solid', 'fa-regular');
+                }
+            });
+        }
+
+        function renderBookmarksList() {
+            const container = document.getElementById('bookmarks-list');
+            if (!container) return;
+            const bookmarks = getBookmarks();
+            if (bookmarks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-regular fa-bookmark text-4xl mb-3"></i>
+                        <p class="text-sm font-semibold">No saved articles yet.</p>
+                        <p class="text-xs mt-1">Click the bookmark icon on any card to read later.</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = bookmarks.map(b => `
+                <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700">
+                    <img src="${b.image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80'}" class="w-14 h-14 rounded-lg object-cover shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">${b.source || 'News'}</span>
+                        <a href="${b.url}" target="_blank" class="block text-xs font-bold text-slate-900 dark:text-white line-clamp-2 hover:underline">
+                            ${b.title}
+                        </a>
+                        <span class="text-[9px] text-slate-400 mt-1 block">Saved ${b.savedAt}</span>
+                    </div>
+                    <button onclick="toggleBookmark('${b.id}')" class="text-slate-400 hover:text-red-500 p-1">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function clearAllBookmarks() {
+            if (confirm("Are you sure you want to clear your saved reading list?")) {
+                saveBookmarks([]);
+                renderBookmarksList();
+                updateBookmarkButtons();
+                showToast("Cleared reading list");
+            }
+        }
+
+        function toggleBookmarksDrawer() {
+            const drawer = document.getElementById('bookmarks-drawer');
+            if (drawer) {
+                drawer.classList.toggle('hidden');
+                if (!drawer.classList.contains('hidden')) {
+                    renderBookmarksList();
+                }
+            }
+        }
+
+        // Quick Share Functionality
+        function shareArticle(title, url) {
+            if (navigator.share) {
+                navigator.share({ title: title, url: url }).catch(() => {});
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast("Link copied to clipboard!");
+                });
+            } else {
+                showToast("URL: " + url);
+            }
+        }
+
+        // Real-time Header Clock
+        function updateClock() {
+            const el = document.getElementById('current-timestamp');
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleDateString(undefined, { 
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 30000);
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                if (isHidden) {
+                    mobileMenu.classList.remove('hidden');
+                    menuIcon.classList.remove('fa-bars');
+                    menuIcon.classList.add('fa-xmark');
+                } else {
+                    mobileMenu.classList.add('hidden');
+                    menuIcon.classList.remove('fa-xmark');
+                    menuIcon.classList.add('fa-bars');
+                }
+            });
+        }
+
+        // Global Image Fallback Handler & Initializer
+        document.addEventListener('DOMContentLoaded', () => {
+            const images = document.querySelectorAll('img.news-thumb');
+            images.forEach(img => {
+                img.addEventListener('error', function() {
+                    this.onerror = null;
+                    this.src = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80';
+                });
+            });
+            updateBookmarkBadges();
+            updateBookmarkButtons();
+        });
+    </script>
+</body>
+</html>

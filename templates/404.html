@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - Imp News App{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-20 text-center">
+    <div class="w-20 h-20 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto text-3xl font-black mb-6 shadow-sm border border-blue-100">
+        404
+    </div>
+    <h1 class="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Category or Article Not Found</h1>
+    <p class="text-slate-600 text-sm max-w-md mx-auto mb-8">
+        The news category or page you are looking for does not exist or has been relocated.
+    </p>
+    <a href="{{ url_for('home') }}" class="inline-flex items-center px-6 py-3 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-md transition">
+        <i class="fa-solid fa-arrow-left mr-2"></i> Return to Home Feed
+    </a>
+</div>
+{% endblock %}
+

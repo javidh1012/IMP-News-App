@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50 text-slate-900 antialiased" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category_meta.name }} - Imp News App</title>
+    
+    <!-- Google Fonts: Inter & Noto Sans Tamil -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Tamil', 'system-ui', 'sans-serif'],
+                        tamil: ['Noto Sans Tamil', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } }
+        .animate-pulse-fast { animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="flex min-h-screen flex-col bg-slate-50 text-slate-900 font-sans">
+
+    <!-- Top Utility Bar -->
+    <header class="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-50">
+        <div class="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-600 text-white uppercase tracking-wider">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-white animate-pulse-fast"></span> Live Feeds
+                    </span>
+                    <span id="header-clock" class="text-slate-400 hidden sm:inline"></span>
+                </div>
+                <div class="flex items-center space-x-3 text-xs">
+                    <span class="text-teal-300 font-medium flex items-center bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800 text-[11px]">
+                        <i class="fa-solid fa-shield-halved mr-1 text-[10px] text-teal-400"></i> Token-Saver ({{ cache_minutes }}m Cache)
+                    </span>
+                    <a href="{{ url_for('home') }}" class="text-blue-400 hover:text-white font-medium flex items-center">
+                        <i class="fa-solid fa-house mr-1 text-[11px]"></i> Home Feed
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Navigation Bar with All 5 Category Links -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}" class="flex items-center space-x-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-rose-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                            <i class="fa-solid fa-newspaper text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition">Imp News<span class="text-red-600">.</span></span>
+                            <span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 -mt-1">Real-Time Portal</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Desktop Category Navigation Links (All 5 Categories) -->
+                <div class="hidden lg:flex items-center space-x-1">
+                    <a href="{{ url_for('home') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100 transition">
+                        Home
+                    </a>
+                    <!-- 1. Tamil News -->
+                    <a href="{{ url_for('category_view', category_name='tamil') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 {% if category_slug == 'tamil' %}text-rose-600 bg-rose-50 font-bold{% else %}text-slate-700 hover:text-rose-600 hover:bg-slate-100{% endif %}">
+                        <i class="fa-solid fa-language text-xs text-rose-500"></i>
+                        <span>Tamil News</span>
+                    </a>
+                    <!-- 2. English News -->
+                    <a href="{{ url_for('category_view', category_name='english') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 {% if category_slug == 'english' %}text-blue-600 bg-blue-50 font-bold{% else %}text-slate-700 hover:text-blue-600 hover:bg-slate-100{% endif %}">
+                        <i class="fa-solid fa-globe text-xs text-blue-500"></i>
+                        <span>English News</span>
+                    </a>
+                    <!-- 3. Tech News -->
+                    <a href="{{ url_for('category_view', category_name='tech') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 {% if category_slug == 'tech' %}text-emerald-600 bg-emerald-50 font-bold{% else %}text-slate-700 hover:text-emerald-600 hover:bg-slate-100{% endif %}">
+                        <i class="fa-solid fa-microchip text-xs text-emerald-500"></i>
+                        <span>Tech News</span>
+                    </a>
+                    <!-- 4. Mysterious Tech News -->
+                    <a href="{{ url_for('category_view', category_name='mysterious-tech') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 {% if category_slug == 'mysterious-tech' %}text-purple-600 bg-purple-50 font-bold{% else %}text-slate-700 hover:text-purple-600 hover:bg-slate-100{% endif %}">
+                        <i class="fa-solid fa-atom text-xs text-purple-500"></i>
+                        <span>Mysterious Tech</span>
+                    </a>
+                    <!-- 5. Breaking News -->
+                    <a href="{{ url_for('category_view', category_name='breaking') }}" class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center space-x-1.5 {% if category_slug == 'breaking' %}bg-red-600 text-white shadow-sm{% else %}bg-red-100 text-red-700 hover:bg-red-200 border border-red-200{% endif %}">
+                        <span class="w-2 h-2 rounded-full {% if category_slug == 'breaking' %}bg-white{% else %}bg-red-600{% endif %} animate-pulse-fast"></span>
+                        <span>Breaking News</span>
+                    </a>
+                    <!-- Saved Posts Tab (SQL Database) -->
+                    <a href="{{ url_for('saved_posts_view') }}" class="ml-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-bookmark text-amber-600"></i>
+                        <span>Saved</span>
+                        <span id="nav-saved-count" class="px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 font-extrabold text-[10px]">{{ saved_count }}</span>
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex lg:hidden">
+                    <button type="button" id="mobile-menu-btn" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none">
+                        <i class="fa-solid fa-bars text-xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Drawer -->
+            <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-200 py-3 space-y-1">
+                <a href="{{ url_for('home') }}" class="block px-3 py-2 rounded-md text-base font-semibold text-slate-700 hover:bg-slate-100">
+                    <i class="fa-solid fa-house mr-2"></i> Home
+                </a>
+                <a href="{{ url_for('category_view', category_name='tamil') }}" class="block px-3 py-2 rounded-md text-base font-semibold {% if category_slug == 'tamil' %}text-rose-600 bg-rose-50{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+                    <i class="fa-solid fa-language mr-2 text-rose-500"></i> Tamil News
+                </a>
+                <a href="{{ url_for('category_view', category_name='english') }}" class="block px-3 py-2 rounded-md text-base font-semibold {% if category_slug == 'english' %}text-blue-600 bg-blue-50{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+                    <i class="fa-solid fa-globe mr-2 text-blue-500"></i> English News
+                </a>
+                <a href="{{ url_for('category_view', category_name='tech') }}" class="block px-3 py-2 rounded-md text-base font-semibold {% if category_slug == 'tech' %}text-emerald-600 bg-emerald-50{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+                    <i class="fa-solid fa-microchip mr-2 text-emerald-500"></i> Tech News
+                </a>
+                <a href="{{ url_for('category_view', category_name='mysterious-tech') }}" class="block px-3 py-2 rounded-md text-base font-semibold {% if category_slug == 'mysterious-tech' %}text-purple-600 bg-purple-50{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+                    <i class="fa-solid fa-atom mr-2 text-purple-500"></i> Mysterious Tech
+                </a>
+                <a href="{{ url_for('category_view', category_name='breaking') }}" class="block px-3 py-2 rounded-md text-base font-bold {% if category_slug == 'breaking' %}text-white bg-red-600{% else %}text-red-700 bg-red-50{% endif %}">
+                    <i class="fa-solid fa-bolt mr-2"></i> Breaking News
+                </a>
+                <a href="{{ url_for('saved_posts_view') }}" class="block px-3 py-2 rounded-md text-base font-bold text-amber-800 bg-amber-50">
+                    <i class="fa-solid fa-bookmark mr-2 text-amber-600"></i> Saved Posts (<span id="mobile-saved-count">{{ saved_count }}</span>)
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center space-x-2 text-xs text-slate-500">
+            <a href="{{ url_for('home') }}" class="hover:text-blue-600 transition flex items-center">
+                <i class="fa-solid fa-house mr-1"></i> Home
+            </a>
+            <span>/</span>
+            <span class="text-slate-400">Categories</span>
+            <span>/</span>
+            <span class="text-slate-900 font-semibold">{{ category_meta.name }}</span>
+        </nav>
+
+        <!-- Category Header Card -->
+        <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="max-w-3xl">
+                <div class="flex items-center space-x-3 mb-2">
+                    <span class="w-10 h-10 rounded-xl {{ category_meta.badge_class }} border flex items-center justify-center text-lg">
+                        <i class="fa-solid {{ category_meta.icon }}"></i>
+                    </span>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                            {{ category_meta.name }}
+                        </h1>
+                        <span class="text-xs font-semibold text-slate-500">{{ category_meta.native_name }}</span>
+                    </div>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed mt-2">
+                    {{ category_meta.description }}
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-2 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 shrink-0">
+                <div class="text-left md:text-right">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">API Source</span>
+                    <div class="text-lg font-bold text-slate-900 font-mono">{{ category_meta.api_provider }}</div>
+                </div>
+                <div class="text-left md:text-right text-xs text-slate-500">
+                    <span>Target Quota: <strong class="text-slate-800">{{ category_meta.quota }} articles</strong></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Articles Grid (Full View) -->
+        {% if articles and articles|length > 0 %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in articles %}
+            <article class="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1">
+                
+                <!-- Thumbnail -->
+                <div class="relative h-48 w-full overflow-hidden bg-slate-100">
+                    <img src="{{ item.image }}" 
+                         alt="{{ item.title }}" 
+                         class="news-thumb w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                         loading="lazy">
+                    
+                    <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <span class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white shadow-xs">
+                            {{ item.source_name }}
+                        </span>
+                        {% if item.is_breaking %}
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-600 text-white shadow-xs">
+                            BREAKING
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="absolute bottom-2.5 right-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-black/60 backdrop-blur-md text-slate-200">
+                            <i class="fa-regular fa-clock mr-1 text-[9px]"></i> {{ item.published_at }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 group-hover:text-blue-600 transition line-clamp-2 leading-snug mb-2">
+                            <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+                                {{ item.title }}
+                            </a>
+                        </h2>
+
+                        <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">
+                            {{ item.description }}
+                        </p>
+                    </div>
+
+                    <!-- Bottom Action Bar: Save Post (SQL DB), Ask Gemini (AI), Read Story -->
+                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs mt-auto gap-2">
+                        <div class="flex items-center space-x-1.5">
+                            <!-- Save Post Button (Stored in SQL Database) -->
+                            {% set is_saved = (item.id in saved_ids) or (item.url in saved_urls) %}
+                            <button type="button" 
+                                    onclick="toggleSavePost(this)"
+                                    data-id="{{ item.id }}"
+                                    data-title="{{ item.title|e }}"
+                                    data-desc="{{ item.description|e }}"
+                                    data-content="{{ item.content|e }}"
+                                    data-url="{{ item.url }}"
+                                    data-image="{{ item.image }}"
+                                    data-source="{{ item.source_name|e }}"
+                                    data-published="{{ item.published_at }}"
+                                    data-category="{{ category_meta.name }}"
+                                    data-slug="{{ category_slug }}"
+                                    class="save-btn inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold transition {% if is_saved %}bg-amber-50 text-amber-800 border border-amber-200{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80{% endif %}"
+                                    title="Save to reading list (SQL Database)">
+                                <i class="{% if is_saved %}fa-solid text-amber-600{% else %}fa-regular text-slate-500{% endif %} fa-bookmark mr-1.5"></i>
+                                <span class="save-label">{% if is_saved %}Saved{% else %}Save{% endif %}</span>
+                            </button>
+
+                            <!-- Ask Gemini AI Button -->
+                            <button type="button" 
+                                    onclick="openGeminiModal(this)"
+                                    data-title="{{ item.title|e }}"
+                                    data-desc="{{ item.description|e }}"
+                                    data-content="{{ item.content|e }}"
+                                    data-source="{{ item.source_name|e }}"
+                                    data-url="{{ item.url }}"
+                                    class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 text-indigo-700 hover:from-indigo-600 hover:to-purple-600 hover:text-white border border-indigo-200/80 transition-all shadow-2xs group"
+                                    title="Summarize, simplify or ask doubts with Gemini">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-indigo-600 group-hover:text-white transition-transform group-hover:scale-110"></i>
+                                <span>Ask Gemini</span>
+                            </button>
+                        </div>
+
+                        <!-- Read Story Link -->
+                        <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="font-bold text-blue-600 hover:text-blue-800 transition inline-flex items-center space-x-1 shrink-0 ml-auto">
+                            <span>Read Story</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <nav class="flex items-center justify-center space-x-2 pt-8 pb-4" aria-label="Pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('category_view', category_name=category_slug, page=page-1) }}" 
+               class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-xs transition flex items-center space-x-1">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                <span>Previous</span>
+            </a>
+            {% else %}
+            <span class="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-100 border border-slate-200 cursor-not-allowed">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i> Previous
+            </span>
+            {% endif %}
+
+            <div class="flex items-center space-x-1">
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                    <span class="w-9 h-9 rounded-xl text-xs font-bold bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                        {{ p }}
+                    </span>
+                    {% else %}
+                    <a href="{{ url_for('category_view', category_name=category_slug, page=p) }}" 
+                       class="w-9 h-9 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition">
+                        {{ p }}
+                    </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if page < total_pages %}
+            <a href="{{ url_for('category_view', category_name=category_slug, page=page+1) }}" 
+               class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-xs transition flex items-center space-x-1">
+                <span>Next</span>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </a>
+            {% else %}
+            <span class="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-100 border border-slate-200 cursor-not-allowed">
+                Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </span>
+            {% endif %}
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-xs space-y-4">
+            <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-newspaper"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">No articles available currently</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+                No reports were returned by the {{ category_meta.api_provider }} endpoint at this moment. Please check your API quota or retry shortly.
+            </p>
+            <a href="{{ url_for('home') }}" class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition">
+                Return to Home
+            </a>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <!-- Modern Clean Footer -->
+    <footer class="bg-slate-900 text-slate-400 mt-16 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-newspaper text-sm"></i>
+                    </div>
+                    <span class="text-lg font-bold text-white tracking-tight">Imp News App</span>
+                </div>
+                <!-- 5 Category Links in Footer -->
+                <div class="flex flex-wrap items-center justify-center gap-4 text-xs">
+                    <a href="{{ url_for('category_view', category_name='tamil') }}" class="hover:text-white transition">Tamil News</a>
+                    <a href="{{ url_for('category_view', category_name='english') }}" class="hover:text-white transition">English News</a>
+                    <a href="{{ url_for('category_view', category_name='tech') }}" class="hover:text-white transition">Tech News</a>
+                    <a href="{{ url_for('category_view', category_name='mysterious-tech') }}" class="hover:text-white transition">Mysterious Tech</a>
+                    <a href="{{ url_for('category_view', category_name='breaking') }}" class="hover:text-red-400 transition">Breaking News</a>
+                </div>
+                <div class="text-xs text-slate-500">
+                    © {{ current_year }} Imp News App. Live API Feeds.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- ASK GEMINI AI MODAL DIALOG                                                -->
+    <!-- ========================================================================= -->
+    <div id="gemini-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+            
+            <!-- Modal Header -->
+            <div class="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white flex items-start justify-between relative overflow-hidden">
+                <div class="relative z-10 pr-6">
+                    <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-white/10">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400 animate-pulse"></i>
+                        <span>Gemini AI News Copilot</span>
+                    </div>
+                    <h3 id="gemini-modal-title" class="text-base sm:text-lg font-bold text-white line-clamp-2 leading-snug">
+                        Loading article...
+                    </h3>
+                    <p id="gemini-modal-source" class="text-xs text-slate-400 mt-1">Source: Verified Feed</p>
+                </div>
+                <button type="button" onclick="closeGeminiModal()" class="relative z-10 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Action Tabs: 1. Summarize, 2. Simple English, 3. Ask Doubts -->
+            <div class="bg-slate-100 p-2 border-b border-slate-200 grid grid-cols-3 gap-1.5 text-xs font-bold">
+                <button type="button" id="tab-summary" onclick="switchGeminiTab('summary')" class="gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-700 shadow-xs">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Summary</span>
+                </button>
+                <button type="button" id="tab-simple" onclick="switchGeminiTab('simple_english')" class="gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 text-slate-600 hover:bg-white/60">
+                    <i class="fa-solid fa-feather"></i>
+                    <span>Simple English</span>
+                </button>
+                <button type="button" id="tab-doubt" onclick="switchGeminiTab('ask_doubt')" class="gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 text-slate-600 hover:bg-white/60">
+                    <i class="fa-regular fa-circle-question"></i>
+                    <span>Ask Doubts</span>
+                </button>
+            </div>
+
+            <!-- Modal Body / Content -->
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                
+                <!-- Doubt Input Container (Shown only on 'ask_doubt' tab) -->
+                <div id="doubt-input-section" class="hidden space-y-2">
+                    <label for="doubt-input" class="block text-xs font-bold text-slate-700">What is your question or doubt about this news?</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="doubt-input" placeholder="e.g. Why did this happen? What does this term mean?" 
+                               class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <button type="button" onclick="submitDoubt()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1 shrink-0">
+                            <span>Ask</span>
+                            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                        </button>
+                    </div>
+                    <!-- Quick Prompt Chips -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <button type="button" onclick="fillDoubt('Why is this news important?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">
+                            Why does this matter?
+                        </button>
+                        <button type="button" onclick="fillDoubt('Explain the background of this event simply.')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">
+                            Background context
+                        </button>
+                        <button type="button" onclick="fillDoubt('Who is most affected by this decision?')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition">
+                            Who is affected?
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Response Card -->
+                <div class="relative bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-200 text-sm leading-relaxed text-slate-800 min-h-[160px]">
+                    <!-- Loading Shimmer -->
+                    <div id="gemini-loading" class="hidden space-y-3 py-6 text-center">
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 animate-spin mb-2">
+                            <i class="fa-solid fa-spinner text-lg"></i>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700">Gemini is analyzing the story...</p>
+                        <p class="text-[11px] text-slate-400">Extracting facts, context and simplifying language</p>
+                    </div>
+
+                    <!-- Output Text -->
+                    <div id="gemini-output" class="whitespace-pre-line text-xs sm:text-sm font-sans space-y-2">
+                        <!-- AI content will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Missing API Key Notice (Shown if Gemini key not set) -->
+                <div id="gemini-key-notice" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
+                    <div class="font-bold flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-600"></i>
+                        <span>Gemini API Key Required</span>
+                    </div>
+                    <p class="text-[11px] text-amber-700">
+                        Add <code class="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-900">GEMINI_API_KEY=your_key</code> to your <code class="font-mono">.env</code> file to enable instant AI summaries, Simple English simplification, and doubt answers.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span class="inline-flex items-center text-[11px]">
+                    <i class="fa-solid fa-shield-halved mr-1 text-indigo-500"></i> Powered by Google Gemini
+                </span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="copyGeminiOutput()" id="copy-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 font-semibold text-slate-700 transition flex items-center space-x-1">
+                        <i class="fa-regular fa-copy text-[11px]"></i>
+                        <span id="copy-text">Copy</span>
+                    </button>
+                    <button type="button" onclick="closeGeminiModal()" class="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold transition">
+                        Done
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification Element -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="flex items-center space-x-2.5 px-4 py-3 rounded-2xl bg-slate-900 text-white text-xs font-semibold shadow-2xl border border-slate-800">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-message">Notification message</span>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const el = document.getElementById('header-clock');
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleDateString(undefined, { 
+                    weekday: 'short', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 30000);
+
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                menuIcon.classList.toggle('fa-bars');
+                menuIcon.classList.toggle('fa-xmark');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const images = document.querySelectorAll('img.news-thumb');
+            images.forEach(img => {
+                img.addEventListener('error', function() {
+                    this.onerror = null;
+                    this.src = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80';
+                });
+            });
+        });
+
+        // Toast Helper
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            toastMsg.textContent = message;
+            if (isError) {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            }
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // =========================================================================
+        // TOGGLE SAVE POST (SQL DATABASE)
+        // =========================================================================
+        async function toggleSavePost(btn) {
+            const articleData = {
+                id: btn.getAttribute('data-id'),
+                title: btn.getAttribute('data-title'),
+                description: btn.getAttribute('data-desc'),
+                content: btn.getAttribute('data-content'),
+                url: btn.getAttribute('data-url'),
+                image: btn.getAttribute('data-image'),
+                source_name: btn.getAttribute('data-source'),
+                published_at: btn.getAttribute('data-published'),
+                category_name: btn.getAttribute('data-category'),
+                category_slug: btn.getAttribute('data-slug')
+            };
+
+            try {
+                const response = await fetch('/api/save-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(articleData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const icon = btn.querySelector('i');
+                    const label = btn.querySelector('.save-label');
+                    if (data.saved) {
+                        btn.className = "save-btn inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-50 text-amber-800 border border-amber-200";
+                        icon.className = "fa-solid fa-bookmark mr-1.5 text-amber-600";
+                        label.textContent = "Saved";
+                        showToast("Article saved to your reading list!");
+                    } else {
+                        btn.className = "save-btn inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold transition bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80";
+                        icon.className = "fa-regular fa-bookmark mr-1.5 text-slate-500";
+                        label.textContent = "Save";
+                        showToast("Article removed from saved posts.");
+                    }
+
+                    // Update navbar badges
+                    const navCount = document.getElementById('nav-saved-count');
+                    const mobileCount = document.getElementById('mobile-saved-count');
+                    if (navCount) navCount.textContent = data.saved_count;
+                    if (mobileCount) mobileCount.textContent = data.saved_count;
+                } else {
+                    showToast(data.error || "Failed to update saved post", true);
+                }
+            } catch (err) {
+                showToast("Network error while saving post", true);
+            }
+        }
+
+        // =========================================================================
+        // GEMINI AI MODAL LOGIC
+        // =========================================================================
+        let currentArticle = { title: '', desc: '', content: '', source: '', url: '' };
+        let currentTab = 'summary';
+
+        function openGeminiModal(btn) {
+            currentArticle.title = btn.getAttribute('data-title') || '';
+            currentArticle.desc = btn.getAttribute('data-desc') || '';
+            currentArticle.content = btn.getAttribute('data-content') || '';
+            currentArticle.source = btn.getAttribute('data-source') || 'Verified Feed';
+            currentArticle.url = btn.getAttribute('data-url') || '';
+
+            document.getElementById('gemini-modal-title').textContent = currentArticle.title;
+            document.getElementById('gemini-modal-source').textContent = 'Source: ' + currentArticle.source;
+
+            document.getElementById('gemini-modal').classList.remove('hidden');
+            switchGeminiTab('summary');
+        }
+
+        function closeGeminiModal() {
+            document.getElementById('gemini-modal').classList.add('hidden');
+        }
+
+        function switchGeminiTab(tab) {
+            currentTab = tab;
+            const tabSummary = document.getElementById('tab-summary');
+            const tabSimple = document.getElementById('tab-simple');
+            const tabDoubt = document.getElementById('tab-doubt');
+            const doubtSection = document.getElementById('doubt-input-section');
+
+            [tabSummary, tabSimple, tabDoubt].forEach(t => {
+                t.className = "gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 text-slate-600 hover:bg-white/60";
+            });
+
+            if (tab === 'summary') {
+                tabSummary.className = "gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-700 shadow-xs";
+                doubtSection.classList.add('hidden');
+                triggerGeminiAction('summary');
+            } else if (tab === 'simple_english') {
+                tabSimple.className = "gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-700 shadow-xs";
+                doubtSection.classList.add('hidden');
+                triggerGeminiAction('simple_english');
+            } else if (tab === 'ask_doubt') {
+                tabDoubt.className = "gemini-tab py-2 px-3 rounded-xl transition flex items-center justify-center space-x-1.5 bg-white text-indigo-700 shadow-xs";
+                doubtSection.classList.remove('hidden');
+                document.getElementById('gemini-output').innerHTML = '<p class="text-slate-400 italic">Type your question or doubt above and click "Ask" to get an answer directly from Gemini AI.</p>';
+            }
+        }
+
+        async function triggerGeminiAction(action, question = '') {
+            const output = document.getElementById('gemini-output');
+            const loading = document.getElementById('gemini-loading');
+            const keyNotice = document.getElementById('gemini-key-notice');
+
+            output.innerHTML = '';
+            loading.classList.remove('hidden');
+            keyNotice.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/gemini/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: action,
+                        title: currentArticle.title,
+                        description: currentArticle.desc,
+                        content: currentArticle.content,
+                        question: question
+                    })
+                });
+
+                const data = await response.json();
+                loading.classList.add('hidden');
+
+                if (data.success) {
+                    output.textContent = data.result;
+                } else {
+                    output.innerHTML = `<span class="text-rose-600 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error || 'Failed to process with Gemini.'}</span>`;
+                    if (data.error && data.error.includes('GEMINI_API_KEY')) {
+                        keyNotice.classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                loading.classList.add('hidden');
+                output.innerHTML = `<span class="text-rose-600 font-semibold"><i class="fa-solid fa-wifi mr-1"></i> Network connection error connecting to Gemini.</span>`;
+            }
+        }
+
+        function submitDoubt() {
+            const input = document.getElementById('doubt-input');
+            const question = input.value.trim();
+            if (!question) {
+                showToast('Please type a question or doubt first', true);
+                return;
+            }
+            triggerGeminiAction('ask_doubt', question);
+        }
+
+        function fillDoubt(text) {
+            const input = document.getElementById('doubt-input');
+            input.value = text;
+            submitDoubt();
+        }
+
+        function copyGeminiOutput() {
+            const text = document.getElementById('gemini-output').innerText;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const copyText = document.getElementById('copy-text');
+                copyText.textContent = "Copied!";
+                setTimeout(() => { copyText.textContent = "Copy"; }, 2000);
+            });
+        }
+
+        // Close on ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeGeminiModal();
+        });
+    </script>
+</body>
+</html>
